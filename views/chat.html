@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group Chat</title>
+    <style>
+        #container {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        #container p {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Group Chat</h1>
+    <h4 id="socketID"></h4>
+
+    <input type="radio" id="group1" name="group" value="news"> News <br>
+    <input type="radio" id="group2" name="group" value="sports"> Sports <br>
+
+    <button onclick="joinGroup()">Join Group</button>
+
+    <input type="text" id="message" name="message" placeholder="Enter your message">
+    <button onclick="sendGroupMessage()">Sent Message</button>
+
+    <h3>Chat History</h3>
+    <div id="container" name="container"></div>
+
+    <button onclick="leaveGroup()">Leave Group</button>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const ioClient = io();
+
+        // Bağlantı kurulduğunda
+        ioClient.on('connect', () => {
+            document.getElementById('socketID').innerHTML = ioClient.id;
+        });
+
+        // Grup katılma
+        function joinGroup() {
+            const groupRadio = document.querySelector('input[name="group"]:checked');
+            const groupName = groupRadio.value;
+            ioClient.emit('join_group', groupName);
+        }
+
+        // Grup mesajı gönderme
+        function sendGroupMessage() {
+            const txtMessage = document.getElementById('message');
+            const message = txtMessage.value;
+            const data = {
+                group: document.querySelector('input[name="group"]:checked').value,
+                message: message
+            };
+            ioClient.emit('group_message', data);
+        }
+
+        // Grup mesajlarını al
+        ioClient.on('group_message', (data) => {
+            const container = document.getElementById('container');
+            const senderId = data.senderId;
+            const message = data.message;
+
+            const msg = `<p><b>${senderId}:</b> ${message}</p>`;
+            container.innerHTML += msg; // Yeni mesajı ekle
+        });
+
+        // Grup terk etme
+        function leaveGroup() {
+            const groupRadio = document.querySelector('input[name="group"]:checked');
+            const groupName = groupRadio.value;
+            ioClient.emit('leave_group', groupName);
+        }
+    </script>
+</body>
+</html>
